@@ -4,6 +4,7 @@ class ColorPicker {
         this.id = "colorPicker" //id del componente
         this.favorites = favorites; //colores favoritos
         this.position = { x: 0, y: 0 }; //posicion del componente
+        this.activeModel = 0;
 
         this.hex = "#FF0000"; //hex exportable
         this.alpha = "1"; //valor alfa
@@ -12,11 +13,11 @@ class ColorPicker {
         this.hsl = { h: 255, s: 0, l: 0 }
         this.hsv = { h: 255, s: 0, v: 0 }
         this.cmyk = { c: 0, m: 0, y: 0, k: 0 }
-        this.hue = "0"; // cursor hue
+        this.hue = 1; // cursor hue
         this.hueHex = "#FF0000" //color del hue
         this.cursors = {
             color: { x: 145, y: 10 },
-            hue: 5,
+            hue: 1,
             alpha: 145
         };
         this.sizes = {
@@ -31,11 +32,7 @@ class ColorPicker {
 
         IMPLEMENTAR EL CANAL ALFA EN LOS CONVERSORES
 
-        CORREGIR/SIMPLIFICAR toHSL()
-
         LISTA DE FAVORITOS & RENDER DE COLORES 
-        
-        BOTON PARA CAMBIAR LA ENTRADA DE COLOR
 
         MODAL PARA CERRAR EL PICKER
 
@@ -44,82 +41,75 @@ class ColorPicker {
         ALFA DESACTIVABLE Y PREVIEW TOMA TODO ESE ESPACIO // EL ALFA ES CONFLICTIVO AL CONVERTIR
 
         UPDATE COLOR DEBE REGRESAR EL VALOR HACIA EL EVENTO QUE LO ACTIVO "change()"
-        
     */
-    toRGB(color = this.hex) {
+    // FROM HEX TO ANY
+    toRGB(color = this.hex, save = true) {
         let r = parseInt(color.slice(1, 3), 16)
         let g = parseInt(color.slice(3, 5), 16)
         let b = parseInt(color.slice(5, 7), 16)
-        this.rgb = { r: r, g: g, b: b }
+        let rgb = { r: r, g: g, b: b }
+        if (save) {
+            this.rgb = rgb
+            this.hex = color
+        }
         return [r, g, b];
     }
-    toHSL(color = this.hex) {// Convert hex to RGB first
-        let r = 0, g = 0, b = 0;
-        if (color.length == 4) {
-            r = "0x" + color[1] + color[1];
-            g = "0x" + color[2] + color[2];
-            b = "0x" + color[3] + color[3];
-        } else if (color.length == 7) {
-            r = "0x" + color[1] + color[2];
-            g = "0x" + color[3] + color[4];
-            b = "0x" + color[5] + color[6];
-            this.alpha = 1
-            this.cursors.alpha = 150
-        } else {
-            r = "0x" + color[1] + color[2];
-            g = "0x" + color[3] + color[4];
-            b = "0x" + color[5] + color[6];
-        }
-        // Then to HSL
+    toHSL(color = this.color, save = false) {
+        let r, g, b
+        [r, g, b] = this.toRGB(color, false, save)
         r /= 255;
         g /= 255;
         b /= 255;
-        let cmin = Math.min(r, g, b),
-            cmax = Math.max(r, g, b),
-            delta = cmax - cmin,
-            h = 0,
-            s = 0,
-            l = 0;
+        let cmin = Math.min(r, g, b)
+        let cmax = Math.max(r, g, b)
+        let delta = cmax - cmin
 
-        if (delta == 0)
-            h = 0;
-        else if (cmax == r)
-            h = ((g - b) / delta) % 6;
-        else if (cmax == g)
-            h = (b - r) / delta + 2;
-        else
-            h = (r - g) / delta + 4;
-
-        h = Math.round(h * 60);
-
-        if (h < 0)
-            h += 360;
-
-        l = (cmax + cmin) / 2;
-        s = delta == 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
-        this.hue = h
-        this.cursors.hue = Math.trunc(150 - ((h / 360) * 150))
-        let v = l + s * Math.min(l, 1 - l)
-        let sHSV = v == 0 ? 0 : 2 * (1 - l / v)
-        s = +(s * 100).toFixed(1);
-        l = +(l * 100).toFixed(1);
-        this.hsl.h = h
-        this.hsl.s = s
-        this.hsl.l = l
-
-        this.hsv.h = h
-        this.hsv.s = sHSV
-        this.hsv.v = v
-
-        this.cursors.color = { x: Math.trunc(sHSV * 150), y: Math.trunc(-(v - 1) * 150) }
-        this.toCMYK(color)
-        this.render(true, color);
+        let hsl = { h: 0, s: 0, l: 0 }
+        switch (cmax) {
+            case r:
+                hsl.h = ((g - b) / delta) % 6
+                break;
+            case g:
+                hsl.h = ((b - r) / delta) + 2
+                break;
+            case b:
+                hsl.h = ((r - g) / delta) + 4
+                break;
+        }
+        hsl.h = isNaN(hsl.h) ? 0 : hsl.h
+        hsl.h = Math.round(hsl.h * 60)
+        hsl.h = hsl.h < 0 ? hsl.h + 360 : hsl.h
+        hsl.l = (cmax + cmin) / 2;
+        hsl.s = delta == 0 ? 0 : delta / (1 - Math.abs(2 * hsl.l - 1));
+        if (save) {
+            this.hsl = hsl
+        }
+        return hsl
     }
-    toHSV(color = this.hex) {
-
+    toHSV(color = this.hex, save = true, render = true) {
+        let hsl = this.toHSL(color)
+        let hsv = { h: 0, s: 0, v: 0 }
+        hsv.h = hsl.h
+        hsv.v = hsl.l + hsl.s * Math.min(hsl.l, 1 - hsl.l)
+        hsv.s = hsv.v == 0 ? 0 : 2 * (1 - hsl.l / hsv.v)
+        if (save) {
+            this.hue = hsv.h
+            this.cursors = {
+                hue: hsv == 0 ? 0 : Math.trunc(150 - ((hsv.h / 360) * 150)),
+                color: {
+                    x: Math.trunc(hsv.s * 150),
+                    y: Math.trunc(-(hsv.v - 1) * 150)
+                },
+                alpha: 145
+            }
+            if(render){
+                this.render(true, color);
+            }
+        }
+        return hsv
     }
     toCMYK(color = this.hex, save = false) {
-        this.toRGB(color)
+        this.toRGB(color, false, save)
         let r = this.rgb.r / 255
         let g = this.rgb.g / 255
         let b = this.rgb.b / 255
@@ -128,13 +118,19 @@ class ColorPicker {
         let c = (1 - r - k) / (1 - k)
         let m = (1 - g - k) / (1 - k)
         let y = (1 - b - k) / (1 - k)
-        let cmyk = { c: Math.trunc(c * 100), m: Math.trunc(m * 100), y: Math.trunc(y * 100), k: Math.trunc(k * 100) }
+        let cmyk = { 
+            c: +(c * 100).toFixed(0),
+            m: +(m * 100).toFixed(0), 
+            y: +(y * 100).toFixed(0), 
+            k: +(k * 100).toFixed(0)
+        }
         if (save) {
             this.cmyk = cmyk
         }
         return cmyk
     }
 
+    // TO HEX FROM ANY
     fromRGB(r, g, b, a = false, save = false) {
         let rH = r == 0 || r > 255 ? "00" : r.toString(16);
         let gH = g == 0 || g > 255 ? "00" : g.toString(16);
@@ -147,7 +143,9 @@ class ColorPicker {
         let hex = `#${rH}${gH}${bH}${a ? aH : ""}`;
         if (save) {
             this.hex = a ? this.hex : hex
-            this.outputHex = a ? hex : this.outputHex
+            this.outputHex = hex
+            this.toHSV()
+            this.render()
         }
         return hex
     }
@@ -157,15 +155,49 @@ class ColorPicker {
         let b = Math.trunc(255 * (1 - (y / 100)) * (1 - (k / 100)))
         return this.fromRGB(r, g, b, false, save)
     }
-    fromHSL({ h, s, l } = this.hsl) {
+    fromHSL({ h, s, l } = this.hsl, save = false) {
         let c = (1 - Math.abs(2 * (l / 100) - 1)) * (s / 100)
         let x = c * (1 - Math.abs((h / 60) % 2 - 1))
         let m = l / 100 - c / 2
 
         let r = x, g = 0, b = c
-        return this.fromRGB(Math.trunc((r + m) * 255), Math.trunc((g + m) * 255), Math.trunc((b + m) * 255))
+        return this.fromRGB(Math.trunc((r + m) * 255), Math.trunc((g + m) * 255), Math.trunc((b + m) * 255), false, save)
     }
-    addFavorite() {
+
+    updateModels(hex = this.hex) {
+        $("#hex").val(hex)
+
+        let r, g, b;
+        [r, g, b] = this.toRGB(hex, false, true);
+        $("#red").val(r)
+        $("#green").val(g)
+        $("#blue").val(b)
+
+        let hsl = this.toHSL(hex, true);
+        $("#hueColor").val(hsl.h)
+        $("#saturation").val(+(hsl.s * 100).toFixed(0))
+        $("#light").val((hsl.l * 100).toFixed(0))
+
+        let cmyk = this.toCMYK(hex, true);
+        $("#cyan").val(cmyk.c)
+        $("#magenta").val(cmyk.m)
+        $("#yellow").val(cmyk.y)
+        $("#black").val(cmyk.k)
+
+        this.toHSV(hex, true, false)
+        console.log(this.hex)
+        console.log(this.rgb)
+        console.log(this.hsl)
+        console.log(this.cmyk)
+    }
+    validateRange(input, m = 0, M = 100) {
+        return +input > M ? M : +input < m ? 0 : +input
+    }
+    validateHex(input) { // pendiente implementar
+        return input
+    }
+
+    addFavorite() { // pendiente implementar
         this.favorites.append(this.color)
         return "";
     }
@@ -183,15 +215,14 @@ class ColorPicker {
         let ctx = document.getElementById("hue").getContext("2d")
         let p = ctx.getImageData(0, this.cursors.hue, 1, 1).data;
         this.hue = (360 * ((this.cursors.hue) / this.sizes.hue)).toFixed(0)
-        this.hueHex = this.fromRGB(p[0], p[1], p[2])
+        this.hueHex = color ? color : this.fromRGB(p[0], p[1], p[2])
 
         let ctxColor = document.getElementById("color").getContext("2d")
         let preview = color ? this.toRGB(color) : ctxColor.getImageData(this.cursors.color.x, this.cursors.color.y, 1, 1).data;
         this.hex = this.fromRGB(preview[0], preview[1], preview[2])
         this.outputHex = this.fromRGB(preview[0], preview[1], preview[2], true)
         this.rgb = { r: preview[0], g: preview[1], b: preview[2] }
-        $("#hex").val(this.outputHex)
-        console.log({ alpha: this.alpha, hue: this.hue, hueHex: this.hueHex, hex: this.hex, outputHex: this.outputHex, r: this.rgb.r, g: this.rgb.g, b: this.rgb.b })
+        this.updateModels(this.hex)
     }
     build(color = this.hex) {
         let favorites = this.favoritesToHTML()
@@ -203,30 +234,39 @@ class ColorPicker {
                 <canvas id="preview"></canvas>
             </section>
             <section id="colorInputs">
-                <div id="hexInput">
+                <div id="hexInput" class="colorModel">
                     <label for="hex"> HEX </label>
                     <input type="text" id="hex" value="${color}"/>
                 </div>
-                <div id="rgbInput">
-                    <label for="red" class="labelMini"> R </label>
-                    <input type="text" id="red" class="inputMini" />
-                    <label for="blue" class="labelMini"> B </label>
-                    <input type="text" id="green" class="inputMini" />
-                    <label for="green" class="labelMini"> G </label>
-                    <input type="text" id="blue" class="inputMini" />
+                <div id="rgbInput" class="colorModel">
+                    <label for="red" class="labelSmall"> R </label>
+                    <input type="number" id="red" class="inputSmall" min="0" max="255" value="0"/>
+                    <label for="green" class="labelSmall"> G </label>
+                    <input type="number" id="green" class="inputSmall" min="0" max="255" value="0"/>
+                    <label for="blue" class="labelSmall"> B </label>
+                    <input type="number" id="blue" class="inputSmall" min="0" max="255" value="0"/>
                 </div>
-                <div id="hslInput">
-                    <label for="hue" class="labelMini"> H </label>
-                    <input type="text" id="hue" class="inputMini" />
-                    <label for="saturation" class="labelMini"> S </label>
-                    <input type="text" id="saturation" class="inputMini" />
-                    <label for="light" class="labelMini"> L </label>
-                    <input type="text" id="light" class="inputMini" />
+                <div id="hslInput" class="colorModel">
+                    <label for="hueColor" class="labelSmall"> H </label>
+                    <input type="number" id="hueColor" class="inputSmall" min="0" max="359" value="0"/>
+                    <label for="saturation" class="labelSmall"> S </label>
+                    <input type="number" id="saturation" class="inputSmall" min="0" max="100" value="0"/>
+                    <label for="light" class="labeSmall"> L </label>
+                    <input type="number" id="light" class="inputSmall" min="0" max="100" value="0"/>
+                </div>
+                <div id="cmykInput" class="colorModel">
+                    <label for="cyan" class="labelMini"> C </label>
+                    <input type="number" id="cyan" class="inputMini" min="0" max="100" value="100"/>
+                    <label for="magenta" class="labelMini"> M </label>
+                    <input type="number" id="magenta" class="inputMini" min="0" max="100" value="100"/>
+                    <label for="yellow" class="labelMini"> Y </label>
+                    <input type="number" id="yellow" class="inputMini" min="0" max="100" value="100"/>
+                    <label for="black" class="labelMini"> B </label>
+                    <input type="number" id="black" class="inputMini" min="0" max="100" value="100"/>
                 </div>
                 <i id="inputSelector" class="material-icons"> unfold_more </i>
             </section>
             <section id="favorites">
-                
                 ${favorites}
             </section>
         </article>`;
@@ -234,10 +274,31 @@ class ColorPicker {
         let obj = this
         $("body").append(colorPicker)
         $("#hex").change(function() {
-            obj.toHSL($(this).val())
+            obj.toHSV($(this).val())
+        })
+        $("#inputSelector").click(function() {
+            obj.activeModel = (obj.activeModel + 1) % 4
+            $(".colorModel").css("display", "none")
+            $(`.colorModel:eq(${obj.activeModel})`).css("display", "flex")
+            obj.render()
+        });
+        $("input[type='number'").on("input", function() {
+            $(this).val(obj.validateRange($(this).val(), $(this).attr("min"), $(this).attr("max")))
+            $(this).change();
+        });
+        $("#rgbInput input").change(function() {
+            console.log(obj.fromRGB(+$("#red").val(), +$("#green").val(), +$("#blue").val(), false, true))
+        })
+        $("#hslInput input").change(function() {
+            let hsl = { h: +$("#hue").val(), s: +$("#saturation").val(), l: +$("#light").val() }
+            console.log(obj.fromHSL(hsl, true))
+        })
+        $("#cmykInput input").change(function() {
+            let cmyk = { c: +$("#cyan").val(), m: +$("#magenta").val(), y: +$("#yellow").val(), k: +$("#black").val() }
+            console.log(obj.fromCMYK(cmyk, true))
         })
         this.setPosition();
-        this.render();
+        this.render(true, color);
     }
     setPosition(x = 0, y = 0) {
         this.position = { x: x, y: y };
@@ -373,13 +434,13 @@ class ColorPicker {
         })
     }
     render(visible = true, color = null) {
+        $(`#${this.id}`).css({ display: visible ? "block" : "none" });
         if (visible) {
-            this.updateColors(color)
             this.renderHue();
-            this.renderAlpha();
+            this.updateColors(color)
             this.renderColor();
+            this.renderAlpha();
             this.renderPreview();
         }
-        $(`#${this.id}`).css({ display: visible ? "block" : "none" });
     }
 }

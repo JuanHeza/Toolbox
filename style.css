@@ -7,6 +7,16 @@ canvas {
 	//border: 1px solid black; 
     border-radius: 5px;
 }
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
 #colorPicker{
     border: solid 1px #151515;
     width: 200px;
@@ -68,24 +78,32 @@ label[for="hex"]{
 #hex{
     width: 130px;
 }
-.labelMini{
+.labelSmall{
     width: 15px;
 }
-.inputMini{
+.inputSmall{
     width: 30px;
+}
+.labelMini{
+    font-size: 0.8em;
+    width: 18px;
+}
+.inputMini{
+    width: 19px;
+    font-size: 0.7em;
 }
 #inputSelector{
     width: 10px;
     font-size: 1em;
     cursor: pointer;
+    user-select: none;
 }
 #hexInput{
     display: flex;
 } 
-#rgbInput{
-    display: none;
-}
-#hslInput{
+#rgbInput,
+#hslInput,
+#cmykInput{
     display: none;
 }
 #hexInput, #rgbInput, #hslInput{
