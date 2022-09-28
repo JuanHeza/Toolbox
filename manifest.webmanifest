@@ -1,0 +1,42 @@
+{
+	"name": "My Sample PWA",
+	"lang": "en-us",
+	"short_name": "SamplePWA",
+	"description": "A sample PWA for testing purposes",
+	"start_url": "/",
+	"scope": "/",
+	"display": "minimal-ui",
+	"theme_color": "#4b0082",
+	"background_color": "#151515",
+	"orientation": "any",
+	"icons": [
+			{
+				"src": "https://placekitten.com/512/512",
+				"sizes": "512x512"
+			}
+	],
+	"shortcuts": [
+		{
+			"name": "Open Play Later",
+			"short_name": "Play Later",
+			"description": "View the list of podcasts you saved for later",
+			"url": "/play-later?utm_source=homescreen",
+			"icons": [{ "src": "https://placekitten.com/192/192", "sizes": "192x192" }]
+		},
+		{
+			"name": "View Subscriptions",
+			"short_name": "Subscriptions",
+			"description": "View the list of podcasts you listen to",
+			"url": "/subscriptions?utm_source=homescreen",
+			"icons": [{ "src": "https://placekitten.com/192/192", "sizes": "192x192" }]
+		}
+	],
+	"share_target": {
+		"action": "/share.html",
+		"params": {
+				"title": "name",
+				"text": "description",
+				"url": "link"
+		}
+	}
+}
