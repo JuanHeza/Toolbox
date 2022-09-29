@@ -184,7 +184,7 @@ class ColorPicker {
         $("#yellow").val(cmyk.y)
         $("#black").val(cmyk.k)
 
-        this.toHSV(hex, true, false)
+        //this.toHSV(hex, true, false)        //AQUI ESTA EL PROBLEMA
         console.log(this.hex)
         console.log(this.rgb)
         console.log(this.hsl)
