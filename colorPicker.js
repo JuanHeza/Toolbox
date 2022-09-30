@@ -1,20 +1,39 @@
 class ColorPicker {
+    /*
+        Desarrollado por
+            Juan Heza - 2022
+            
+        Desarrollado el
+            22/sep/2022 - 30/sep/2022
+    */
+    /*
+        IMPLEMENTAR EL CANAL ALFA EN LOS CONVERSORES 
+        ALFA DESACTIVABLE Y PREVIEW TOMA TODO ESE ESPACIO // EL ALFA ES CONFLICTIVO AL CONVERTIR
+
+        - REQUERIMIENTOS
+        - remover canal alfa
+        - hue en la posicion del alfa
+        - saturacion y luminocidad ampliar el ancho
+
+        -- COSAS DE JUAN
+        -- agregar "estilos & orientacion" al constructor
+    */
     constructor(favorites = []) {
-        this.container = "";
+        this.container = null
         this.id = "colorPicker" //id del componente
         this.favorites = favorites; //colores favoritos
-        this.position = { x: 0, y: 0 }; //posicion del componente
+        this.position = { left: 0, top: 0 }; //posicion del componente
         this.activeModel = 0;
 
-        this.hex = "#FF0000"; //hex exportable
+        this.hex = "#ed0714"; //hex exportable
         this.alpha = "1"; //valor alfa
-        this.outputHex = "#FF0000";
+        this.outputHex = "#ed0714";
         this.rgb = { r: 255, g: 0, b: 0 }
         this.hsl = { h: 255, s: 0, l: 0 }
         this.hsv = { h: 255, s: 0, v: 0 }
         this.cmyk = { c: 0, m: 0, y: 0, k: 0 }
         this.hue = 1; // cursor hue
-        this.hueHex = "#FF0000" //color del hue
+        this.hueHex = "#ff000f" //color del hue
         this.cursors = {
             color: { x: 145, y: 10 },
             hue: 1,
@@ -25,23 +44,9 @@ class ColorPicker {
             alpha: 150,
             color: { w: 150, h: 150 }
         } // tamaños
-        return this.build()
+        return this.build(false)
     }
-    /*
-        PONER UNA OPCION PARA REGRESAR EL VALOR O ALMACENARLO, EN TODOS LOS CONVERSORES
-
-        IMPLEMENTAR EL CANAL ALFA EN LOS CONVERSORES
-
-        LISTA DE FAVORITOS & RENDER DE COLORES 
-
-        MODAL PARA CERRAR EL PICKER
-
-        UBICACION SEGUN EL SELECTOR Y ESPACIO DE VENTANA
-
-        ALFA DESACTIVABLE Y PREVIEW TOMA TODO ESE ESPACIO // EL ALFA ES CONFLICTIVO AL CONVERTIR
-
-        UPDATE COLOR DEBE REGRESAR EL VALOR HACIA EL EVENTO QUE LO ACTIVO "change()"
-    */
+    
     // FROM HEX TO ANY
     toRGB(color = this.hex, save = true) {
         let r = parseInt(color.slice(1, 3), 16)
@@ -54,7 +59,7 @@ class ColorPicker {
         }
         return [r, g, b];
     }
-    toHSL(color = this.color, save = false) {
+    toHSL(color = this.hex, save = false) {
         let r, g, b
         [r, g, b] = this.toRGB(color, false, save)
         r /= 255;
@@ -86,7 +91,8 @@ class ColorPicker {
         }
         return hsl
     }
-    toHSV(color = this.hex, save = true, render = true) {
+    toHSV(color = this.hex, save = true) {
+        this.hex = color
         let hsl = this.toHSL(color)
         let hsv = { h: 0, s: 0, v: 0 }
         hsv.h = hsl.h
@@ -102,26 +108,23 @@ class ColorPicker {
                 },
                 alpha: 145
             }
-            if(render){
-                this.render(true, color);
-            }
         }
         return hsv
     }
     toCMYK(color = this.hex, save = false) {
-        this.toRGB(color, false, save)
-        let r = this.rgb.r / 255
-        let g = this.rgb.g / 255
-        let b = this.rgb.b / 255
+        let [r, g, b] = this.toRGB(color, false, save)
+        r = r / 255
+        g = g / 255
+        b = b / 255
 
         let k = 1 - (Math.max(r, g, b))
         let c = (1 - r - k) / (1 - k)
         let m = (1 - g - k) / (1 - k)
         let y = (1 - b - k) / (1 - k)
-        let cmyk = { 
+        let cmyk = {
             c: +(c * 100).toFixed(0),
-            m: +(m * 100).toFixed(0), 
-            y: +(y * 100).toFixed(0), 
+            m: +(m * 100).toFixed(0),
+            y: +(y * 100).toFixed(0),
             k: +(k * 100).toFixed(0)
         }
         if (save) {
@@ -132,6 +135,7 @@ class ColorPicker {
 
     // TO HEX FROM ANY
     fromRGB(r, g, b, a = false, save = false) {
+        this.rgb = { r: r, g: g, b: b }
         let rH = r == 0 || r > 255 ? "00" : r.toString(16);
         let gH = g == 0 || g > 255 ? "00" : g.toString(16);
         let bH = b == 0 || b > 255 ? "00" : b.toString(16);
@@ -144,27 +148,51 @@ class ColorPicker {
         if (save) {
             this.hex = a ? this.hex : hex
             this.outputHex = hex
-            this.toHSV()
-            this.render()
+            this.toHSV(hex, true)
         }
         return hex
     }
     fromCMYK({ c, m, y, k } = this.cmyk, save = false) {
+        this.cmyk = { c: c, m: m, y: y, k: k }
         let r = Math.trunc(255 * (1 - (c / 100)) * (1 - (k / 100)))
         let g = Math.trunc(255 * (1 - (m / 100)) * (1 - (k / 100)))
         let b = Math.trunc(255 * (1 - (y / 100)) * (1 - (k / 100)))
+
         return this.fromRGB(r, g, b, false, save)
     }
     fromHSL({ h, s, l } = this.hsl, save = false) {
+        this.hsl = { h: h, s: s, l: l }
         let c = (1 - Math.abs(2 * (l / 100) - 1)) * (s / 100)
         let x = c * (1 - Math.abs((h / 60) % 2 - 1))
         let m = l / 100 - c / 2
 
-        let r = x, g = 0, b = c
+        let r, g, b
+        h = +h
+        switch (true) {
+            case (0 < h && h < 60):
+                [r, g, b] = [c, x, 0]
+                break;
+            case (60 < h && h < 120):
+                [r, g, b] = [x, c, 0]
+                break;
+            case (120 < h && h < 180):
+                [r, g, b] = [0, c, x]
+                break;
+            case (180 < h && h < 240):
+                [r, g, b] = [0, x, c]
+                break;
+            case (240 < h && h < 300):
+                [r, g, b] = [x, 0, c]
+                break;
+            case (300 < h && h < 360):
+                [r, g, b] = [c, 0, x]
+                break;
+        }
         return this.fromRGB(Math.trunc((r + m) * 255), Math.trunc((g + m) * 255), Math.trunc((b + m) * 255), false, save)
     }
 
-    updateModels(hex = this.hex) {
+    updateModels(hex = this.hex, updateCursor = true) {
+        this.toHSV(hex, updateCursor)
         $("#hex").val(hex)
 
         let r, g, b;
@@ -175,56 +203,54 @@ class ColorPicker {
 
         let hsl = this.toHSL(hex, true);
         $("#hueColor").val(hsl.h)
-        $("#saturation").val(+(hsl.s * 100).toFixed(0))
-        $("#light").val((hsl.l * 100).toFixed(0))
+        $("#saturation").val(+(hsl.s * 100).toFixed(1))
+        $("#light").val(+(hsl.l * 100).toFixed(1))
 
         let cmyk = this.toCMYK(hex, true);
         $("#cyan").val(cmyk.c)
         $("#magenta").val(cmyk.m)
         $("#yellow").val(cmyk.y)
         $("#black").val(cmyk.k)
-
-        //this.toHSV(hex, true, false)        //AQUI ESTA EL PROBLEMA
-        console.log(this.hex)
-        console.log(this.rgb)
-        console.log(this.hsl)
-        console.log(this.cmyk)
     }
     validateRange(input, m = 0, M = 100) {
         return +input > M ? M : +input < m ? 0 : +input
     }
-    validateHex(input) { // pendiente implementar
+    // pendiente implementar
+    validateHex(input) {
         return input
     }
+    // pendiente implementar
+    addFavorite() {
+        if (!this.favorites.includes(this.hex)) {
+            this.favorites.push(this.hex)
+            let list = this.favoritesToHTML()
 
-    addFavorite() { // pendiente implementar
-        this.favorites.append(this.color)
-        return "";
+            $(`#${this.id} #favorites`).html(list)
+            this.favoritesClick()
+        }
+    }
+    favoritesClick() {
+        let obj = this
+        $(`#${this.id} #favorites #addFavorite`).click(function() {
+            obj.hex = $("#hex").val()
+            obj.addFavorite()
+        })
+        $(`#${this.id} #favorites .favorite:not(#addFavorite)`).click(function() {
+            let [r, g, b] = $(this).css("background-color").slice(4, -1).split(",")
+            $("#red").val(+r)
+            $("#green").val(+g)
+            $("#blue").val(+b).change()
+        })
     }
     favoritesToHTML() {
-        let list = `<div class="favorite">+</div>`;
+        let list = `<div id="addFavorite" class="favorite">+</div>`;
         this.favorites.forEach(fav => {
             list += `<div class="favorite" style="background-color: ${fav}"></div>`;
         });
         return list
-
     }
-    updateColors(color = null) {
-        this.alpha = (this.cursors.alpha / this.sizes.alpha).toFixed(2)
 
-        let ctx = document.getElementById("hue").getContext("2d")
-        let p = ctx.getImageData(0, this.cursors.hue, 1, 1).data;
-        this.hue = (360 * ((this.cursors.hue) / this.sizes.hue)).toFixed(0)
-        this.hueHex = color ? color : this.fromRGB(p[0], p[1], p[2])
-
-        let ctxColor = document.getElementById("color").getContext("2d")
-        let preview = color ? this.toRGB(color) : ctxColor.getImageData(this.cursors.color.x, this.cursors.color.y, 1, 1).data;
-        this.hex = this.fromRGB(preview[0], preview[1], preview[2])
-        this.outputHex = this.fromRGB(preview[0], preview[1], preview[2], true)
-        this.rgb = { r: preview[0], g: preview[1], b: preview[2] }
-        this.updateModels(this.hex)
-    }
-    build(color = this.hex) {
+    build(visible = false, color = this.hex) {
         let favorites = this.favoritesToHTML()
         let template = `<article id="${this.id}">
             <section id="picker">
@@ -273,66 +299,104 @@ class ColorPicker {
         let colorPicker = $.parseHTML(template);
         let obj = this
         $("body").append(colorPicker)
-        $("#hex").change(function() {
-            obj.toHSV($(this).val())
-        })
         $("#inputSelector").click(function() {
             obj.activeModel = (obj.activeModel + 1) % 4
             $(".colorModel").css("display", "none")
             $(`.colorModel:eq(${obj.activeModel})`).css("display", "flex")
-            obj.render()
+            obj.updateModels()
         });
+        $("#hex").change(function() {
+            obj.toHSV($(this).val())
+            obj.render()
+        })
         $("input[type='number'").on("input", function() {
             $(this).val(obj.validateRange($(this).val(), $(this).attr("min"), $(this).attr("max")))
-            $(this).change();
+            //          $(this).change();
         });
         $("#rgbInput input").change(function() {
-            console.log(obj.fromRGB(+$("#red").val(), +$("#green").val(), +$("#blue").val(), false, true))
+            obj.fromRGB(+$("#red").val(), +$("#green").val(), +$("#blue").val(), false, true)
+            obj.render()
         })
         $("#hslInput input").change(function() {
             let hsl = { h: +$("#hue").val(), s: +$("#saturation").val(), l: +$("#light").val() }
-            console.log(obj.fromHSL(hsl, true))
+            obj.fromHSL(hsl, true)
+            obj.render()
         })
         $("#cmykInput input").change(function() {
             let cmyk = { c: +$("#cyan").val(), m: +$("#magenta").val(), y: +$("#yellow").val(), k: +$("#black").val() }
-            console.log(obj.fromCMYK(cmyk, true))
+            obj.fromCMYK(cmyk, true)
+            obj.render()
         })
-        this.setPosition();
-        this.render(true, color);
+
+        this.favoritesClick()
+        this.render(visible);
+        $(document).on("click", function() {
+            obj.render(false)
+            $(document).off("click")
+        })
+        $("#colorPicker").mouseleave(function() {
+            $(document).on("click", function() {
+                obj.render(false)
+                $(document).off("click")
+            })
+        }).mouseenter(function() {
+            $(document).off("click")
+        })
     }
-    setPosition(x = 0, y = 0) {
-        this.position = { x: x, y: y };
-        $(`#${this.id}`).css({ top: y, left: x });
+    setPosition(e, color) {
+        let bounds = { height: $(window).height(), width: $(window).width() }
+        let caller = { width: parseInt($(e.target).css("width")), height: parseInt($(e.target).css("height")), ...$(e.target).offset() }
+        let size = { height: $(`#${this.id}`).outerHeight(), width: $(`#${this.id}`).outerWidth() }
+        let positions = {
+            top: caller.top - size.height - 5,
+            bottom: caller.top + caller.height + 5,
+            left: caller.left + size.width > bounds.width ? -1 : caller.left,
+            right: (caller.left + caller.width) - size.width
+        }
+        this.position = { top: positions.top > 10 ? positions.top : positions.bottom, left: positions.left > 0 ? positions.left : positions.right }
+        $(`#${this.id}`).css(this.position);
+        this.container = color;
+        $("#hex").val(color.val())
+        this.hex = color.val()
+        this.render(true)
     }
 
-    renderCursor(ctx, linear = 0, x, y, color = null) {
+    renderCursor(ctx, linear = 0, x, y, updateCursor = true) {
         ctx.lineWidth = 1
-        if (color == null) {
-            let p = ctx.getImageData(x, y, 1, 1).data;
-            color = this.fromRGB(p[0], p[1], p[2])
-        }
-        ctx.fillStyle = color
+        let p = ctx.getImageData(x, y, 1, 1).data;
+        let color = this.fromRGB(p[0], p[1], p[2])
+        ctx.fillStyle = "#ebebeb"
         switch (linear) {
             case 0:
-                ctx.beginPath();
-                ctx.arc(x, y, 3, 0, 2 * Math.PI);
-                ctx.fill();
-
-                ctx.beginPath();
-                ctx.arc(x, y, 4, 0, 2 * Math.PI);
-                ctx.stroke();
+                this.updateModels(this.hex, updateCursor)
+                let ctxColor = document.getElementById("color").getContext("2d");
+                let preview = color ? this.toRGB(color) : ctxColor.getImageData(x, y, 1, 1).data;
+                this.hex = this.fromRGB(preview[0], preview[1], preview[2])
+                this.outputHex = this.fromRGB(preview[0], preview[1], preview[2], true)
+                this.rgb = { r: preview[0], g: preview[1], b: preview[2] }
+                [x, y] = [x % 150, y % 150]
+                ctx.fillRect(x + 4, y - 1, 10, 3)
+                ctx.fillRect(x - 14, y - 1, 10, 3)
+                ctx.fillRect(x - 1, y - 14, 3, 10)
+                ctx.fillRect(x - 1, y + 4, 3, 10)
                 break;
             case 1:
-                ctx.strokeRect(1, y, 150, 0);
+                this.updateModels(this.hex, updateCursor)
+                y = y % 150
+                this.hue = (360 * ((this.cursors.hue) / this.sizes.hue)).toFixed(0)
+                this.hueHex = this.fromHSL({ h: 360 - this.hue, s: 100, l: 50 })
+                ctx.fillRect(0, this.cursors.hue, 150, 3);
                 break;
             case 2:
-                ctx.strokeRect(x, 0, 0, 150);
+                this.alpha = (x / this.sizes.alpha).toFixed(2)
+                ctx.fillRect(x, 0, 3, 150);
                 break;
         }
     }
-    renderAlpha(color = this.hex) {
-        var c = document.getElementById("alpha");
-        var ctx = c.getContext("2d");
+    renderAlpha(color = this.hex, updateCursor = true) {
+        let c = document.getElementById("alpha");
+        let ctx = c.getContext("2d");
+
         c.width = 150;
         c.height = 30;
         ctx.clearRect(0, 0, c.width, c.height);
@@ -342,7 +406,7 @@ class ColorPicker {
         grd.addColorStop(0.8, color);
         ctx.fillStyle = grd;
         ctx.fillRect(0, 0, c.width, c.height);
-        this.renderCursor(ctx, 2, this.cursors.alpha, 15)
+        this.renderCursor(ctx, 2, this.cursors.alpha, 15, updateCursor)
         this.sizes.alpha = c.width
         let obj = this
 
@@ -357,9 +421,10 @@ class ColorPicker {
             $(this).off("mousemove");
         })
     }
-    renderColor(color = this.hueHex) {
-        var c = document.getElementById("color");
-        var ctx = c.getContext("2d");
+    renderColor(color = this.hueHex, updateCursor = true) {
+        let c = document.getElementById("color");
+        let ctx = c.getContext("2d");
+
         c.width = 150;
         c.height = 150;
         ctx.clearRect(0, 0, c.width, c.height);
@@ -377,7 +442,7 @@ class ColorPicker {
         ctx.fillStyle = grd
         ctx.fillRect(0, 0, c.width, c.height);
 
-        this.renderCursor(ctx, 0, this.cursors.color.x, this.cursors.color.y)
+        this.renderCursor(ctx, 0, this.cursors.color.x, this.cursors.color.y, updateCursor)
         this.sizes.color.w = c.width
         this.sizes.color.h = c.height
         let obj = this
@@ -387,25 +452,27 @@ class ColorPicker {
                 //obj.hue = (360 * ((event.offsetY * 2) / obj.sizes.hue)).toFixed(0)
                 obj.cursors.color.y = event.offsetY
                 obj.cursors.color.x = event.offsetX
-                obj.render()
+                obj.render(true, false)
             })
         }).on("mouseup mouseleave", function() {
             $(this).off("mousemove");
         })
     }
     renderPreview() {
-        var c = document.getElementById("preview");
-        var ctx = c.getContext("2d");
+        let c = document.getElementById("preview");
+        let ctx = c.getContext("2d");
         c.width = 30;
         c.height = 30;
         ctx.clearRect(0, 0, c.width, c.height);
-
-        ctx.fillStyle = this.fromRGB(this.rgb.r, this.rgb.g, this.rgb.b, true);
+        let color = this.fromRGB(this.rgb.r, this.rgb.g, this.rgb.b, true);
+        ctx.fillStyle = color;
+        this.container.val(color)
+        this.container.change()
         ctx.fillRect(0, 0, c.width, c.height);
     }
-    renderHue() {
-        var c = document.getElementById("hue");
-        var ctx = c.getContext("2d");
+    renderHue(updateCursor = true) {
+        let c = document.getElementById("hue");
+        let ctx = c.getContext("2d");
         c.width = 30;
         c.height = 150;
 
@@ -420,26 +487,25 @@ class ColorPicker {
 
         ctx.fillStyle = grd;
         ctx.fillRect(0, 0, c.width, c.height);
-        this.renderCursor(ctx, 1, 15, this.cursors.hue)
+        this.renderCursor(ctx, 1, 15, this.cursors.hue, updateCursor)
         this.sizes.hue = c.height
         let obj = this
         $("#hue").off("mousedown");
         $("#hue").on("mousedown", function() {
             $(this).mousemove(function(event) {
                 obj.cursors.hue = event.offsetY
-                obj.render()
+                obj.render(true, false)
             })
         }).on("mouseup mouseleave", function() {
             $(this).off("mousemove");
         })
     }
-    render(visible = true, color = null) {
+    render(visible = true, updateCursor = true) {
         $(`#${this.id}`).css({ display: visible ? "block" : "none" });
         if (visible) {
-            this.renderHue();
-            this.updateColors(color)
-            this.renderColor();
-            this.renderAlpha();
+            this.renderHue(updateCursor);
+            this.renderColor(this.hueHex, updateCursor);
+            this.renderAlpha(this.hex, updateCursor);
             this.renderPreview();
         }
     }

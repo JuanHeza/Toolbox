@@ -1,28 +1,24 @@
-html, body {
-  height: 100%;
-  width: 100%;
-}
-canvas { 
-	margin: auto;
-	//border: 1px solid black; 
-    border-radius: 5px;
-}
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
 
-/* Firefox */
-input[type=number] {
-  -moz-appearance: textfield;
-}
-#colorPicker{
-    border: solid 1px #151515;
+
+#colorPicker {
+    --theme: #ebebeb;
+    --enfasis: #151515;
+    --background: #fff;
+    --enfasisAlpha: #15151580;
+    --borders: #bbb;
+    --text: #454545;
+        
+    border: solid 1px var(--borders);
+    border-radius: 5px;
+    background: var(--theme);
     width: 200px;
     height: auto;
     padding: 5px;
     position: absolute;
+    filter: drop-shadow(0 0 4px #888);
+    user-select: none;
+    
+    
 }
 #picker{
     display: flex;
@@ -30,6 +26,10 @@ input[type=number] {
     justify-content: space-evenly;
     row-gap: 10px;
     margin-bottom: 10px
+}
+#picker canvas{
+	margin: auto;
+    border-radius: 5px;
 }
 #picker #color{
     height: 150px;
@@ -42,7 +42,7 @@ input[type=number] {
 #picker #alpha{
     height: 30px;
     width: 150px;
-    background-image: linear-gradient(45deg, #15151580 25%, transparent 25%), linear-gradient(-45deg, #15151580 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #15151580 75%), linear-gradient(-45deg, transparent 75%, #15151580 75%);
+    background-image: linear-gradient(45deg, var(--enfasisAlpha) 25%, transparent 25%), linear-gradient(-45deg, var(--enfasisAlpha) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--enfasisAlpha) 75%), linear-gradient(-45deg, transparent 75%, var(--enfasisAlpha) 75%);
     background-size: 10px 10px;
     background-position: 0 0, 0 5px, 5px -5px, -5px 0px;
 }
@@ -63,6 +63,9 @@ input[type=number] {
     flex-direction: row;
     align-items: center;
     justify-content: center;
+    font-family: Helvetica ;
+    font-size: 1em;
+    color: var(--text)
 }
 #colorInputs div{
     flex-direction: row;
@@ -71,6 +74,26 @@ input[type=number] {
 }
 #colorInputs label{
     text-align: center;
+}
+#colorInputs input{
+    border: solid 1px #888;
+    border-radius: 5px;
+    background-color: var(--background);
+    color: var(--text);
+    text-align: center;
+}
+#colorInputs input:active,
+#colorInputs input:focus-visible{
+    border-color: var(--enfasis);
+    outline: unset;
+}
+#colorPicker input::-webkit-outer-spin-button,
+#colorPicker input::-webkit-inner-spin-button{
+  -webkit-appearance: none;
+  margin: 0;
+}
+#colorPicker input[type=number] {
+  -moz-appearance: textfield;
 }
 label[for="hex"]{
     width: 40px;
@@ -101,12 +124,10 @@ label[for="hex"]{
 #hexInput{
     display: flex;
 } 
-#rgbInput,
-#hslInput,
-#cmykInput{
+#rgbInput, #hslInput, #cmykInput{
     display: none;
 }
-#hexInput, #rgbInput, #hslInput{
+#hexInput, #rgbInput, #hslInput, #cmykInput{
     width: 180px;
     margin: 0;
 }
@@ -116,15 +137,43 @@ label[for="hex"]{
     flex-wrap: wrap;
     margin-top: 10px;
     padding-top: 5px;
-    border-top: solid 1px #151515;
+    border-top: solid 1px var(--borders);
 }
 .favorite{
     height: 20px;
     width: 20px;
     border-radius: 5px;
-    background: #ebebeb;
+    background: var(--theme);
+    color: var(--enfasis);
     display: flex;
     justify-content: center;
     align-items: center;
     cursor: pointer;
+    border: solid 1px #0000;
+}
+#addFavorite{
+    border-color: var(--borders);
+}
+
+@media (prefers-color-scheme: dark) {
+    #colorPicker{
+        --theme: #151515;
+        --enfasis: #ebebeb;
+        --background: #000;
+        --enfasisAlpha: #ebebeb80;
+        --borders: #454545;
+        --text: #bbb;    
+    }
+}
+/* ================================ */
+/* ================================ */
+/* ================================ */
+.button{
+    margin: 20px;
+}
+
+#grid{
+    display: grid;       
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 20px 0;
 }
